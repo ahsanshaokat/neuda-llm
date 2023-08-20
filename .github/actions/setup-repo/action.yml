@@ -1,0 +1,40 @@
+name: setup-repo
+description: Setup repo with all features on CI
+inputs:
+  python-version:
+    description: 'Python version'
+    required: true
+    default: '3.8'
+  architecture:
+    description: 'Which architecture to run on'
+    required: false
+    default: x64
+runs:
+  using: composite
+  steps:
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+        architecture: ${{ inputs.architecture }}
+    - name: Get cache key prefix
+      id: get-cache-key-prefix
+      shell: bash
+      run: echo "prefix=${{ runner.os }}-${{ inputs.python-version }}" >> $GITHUB_OUTPUT
+    - name: Get pip cache dir
+      id: pip-cache-dir
+      shell: bash
+      run: echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      id: cache-pip
+      with:
+        path: ${{ steps.pip-cache-dir.outputs.dir }}
+        key: ${{ steps.get-cache-key-prefix.outputs.prefix }}-pypi
+        restore-keys: |
+          ${{ steps.get-cache-key-prefix.outputs.prefix }}-pypi-
+    - name: Install dependencies
+      shell: bash
+      run: pip install hatch towncrier
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v4.4.1
