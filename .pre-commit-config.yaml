@@ -1,0 +1,108 @@
+ci:
+  autoupdate_schedule: weekly
+  skip: [check-models-table-update, changelog-dry-run, pyright, yapf, mypy, sync-readme, clj-kondo]
+  autofix_commit_msg: "ci: auto fixes from pre-commit.ci\n\nFor more information, see https://pre-commit.ci"
+  autoupdate_commit_msg: 'ci: pre-commit autoupdate [pre-commit.ci]'
+default_language_version:
+  python: python3.11 # NOTE: sync with .python-version-default
+exclude: '.*\.(css|js|svg)$'
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: 'v0.0.284'
+    hooks:
+      - id: ruff
+        verbose: true
+        args: [--exit-non-zero-on-fix, --show-fixes]
+  - repo: https://github.com/editorconfig-checker/editorconfig-checker.python
+    rev: '2.7.2'
+    hooks:
+      - id: editorconfig-checker
+        verbose: true
+  - repo: https://github.com/econchick/interrogate
+    rev: 1e74611fc5296b0572b6bb11b480d43242c4ec49
+    hooks:
+      - id: interrogate
+        verbose: true
+        types: [python]
+        exclude: ^(docs|tools|openllm-python/tests)
+        args: [--config=pyproject.toml]
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.5.0
+    hooks:
+      - id: mypy
+        verbose: true
+        exclude: |
+          (?x)^(
+              examples/.*|
+              tools/.*|
+              tests/.*|
+              openllm-python/src/openllm/playground/.*|
+              openllm-python/tests/.*|
+              .github/.*|
+              cz.py |
+              hatch_build.py
+          )$
+        additional_dependencies:
+          - click==8.1.3
+          - peft
+          - bentoml==1.1.1
+          - transformers>=4.31.0
+          - pandas-stubs
+          - types-psutil
+          - types-tabulate
+          - types-PyYAML
+          - types-protobuf
+  - repo: https://github.com/vincentjames501/pre-commit-clojure
+    rev: v2.0.3
+    hooks:
+      - id: clj-kondo
+        verbose: true
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+        verbose: true
+      - id: end-of-file-fixer
+        verbose: true
+        exclude: |
+          (?x)^(
+              openllm-python/tests/models/.*
+          )$
+      - id: check-yaml
+        args: ['--unsafe']
+      - id: check-toml
+  - repo: local
+    hooks:
+      - id: yapf
+        verbose: true
+        name: yapf
+        entry: ./tools/yapf
+        types: [python]
+        language: python
+        pass_filenames: false
+        additional_dependencies: ['yapf==0.40.0']
+      - id: check-models-table-update
+        name: check if table in README.md is up-to-date
+        entry: ./tools/assert-model-table-latest.py
+        language: script
+        verbose: true
+        files: README.md
+      - id: sync-readme
+        name: sync readme with python core library
+        entry: ./tools/sync-readme.sh
+        language: script
+        verbose: true
+        files: README.md
+      - id: changelog-dry-run
+        name: Running changelog dry-run
+        entry: hatch run changelog
+        language: system
+        files: CHANGELOG.md
+      - id: pyright
+        name: pyright
+        entry: ./tools/pyright
+        types: [python]
+        language: node
+        pass_filenames: false
+        additional_dependencies: ['pyright@1.1.317']
+        verbose: true
